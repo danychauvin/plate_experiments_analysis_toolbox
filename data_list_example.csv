@@ -1,0 +1,2 @@
+date,description,plate,data_path,plate_map_path
+20220816,acetate,pl1,./data/220818_20220816_acetate0.2.txt,./data/20220816_pl1_map.csv
