@@ -16,7 +16,7 @@ mydata <- myconditions %>%
     date_ <- as.character(unique(.df$date))
     description_ <- as.character(unique(.df$description))
     path_ <- as.character(unique(.df$data_path))
-    path_<-"./data/220818_20220816_acetate0.2.txt"
+    #path_<-"./data/220818_20220816_acetate0.2.txt"
     new_df <- lapply(channels, function(c.){read_Biotek_Synergy_stacker(path_,c.)}) %>% 
       bind_rows() %>% 
       mutate(date=date_,
