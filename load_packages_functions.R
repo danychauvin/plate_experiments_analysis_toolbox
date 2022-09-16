@@ -100,7 +100,7 @@ read_plate_layout <- function(.path) {
     return(new_l)}
   
   return_plate <- function(.index){
-    .col_title <- str_match(.lines[[.index]],"Type: ([a-zA-Z0-9]{1,}),,,,,,,,,,,,$")[[2]]
+    .col_title <- str_match(.lines[[.index]],"Type: ([a-zA-Z0-9]{1,}),.*$")[[2]]
     .data <- .lines[c((.index+2):(.index+9))]
     .values <- lapply(.data,noFirst) %>% unlist()
     .rows <- rep(LETTERS[c(1:8)],each=12)

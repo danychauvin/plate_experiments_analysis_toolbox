@@ -8,6 +8,8 @@ myconditions <- readr::read_csv(path_to_data_list,
                                   data_path=col_character(),
                                   plate_map_path=col_character()))
 
+#myconditions <- myconditions %>% filter(date %in% c("20220907"))
+
 # Import the data
 mydata <- myconditions %>%
   group_by(date,description,plate) %>% #date here is as per datalist, this is not the date of the measurement, description and plate should refer, together, to a unique experiment
@@ -25,7 +27,7 @@ mydata <- myconditions %>%
     return(new_df)})(.)) %>% 
   select(date,description,plate,row,col,value,channel,time,step) %>% 
   ungroup() %>% 
-  pivot_wider(id_cols=c("date","description","plate","col","row","step"),names_from=c("channel"),values_from=c("value","time")) %>% 
+  pivot_wider(id_cols=c("date","description","plate","col","row","step"),names_from=c("channel"),values_from=c("value","time")) %>%
   rename(od="value_OD600:600",
          time="time_OD600:600",
          column=col) %>% 
