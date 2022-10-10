@@ -1,0 +1,369 @@
+---
+title: "data_analysis.Rmd"
+author: "Dany Chauvin"
+date: "2/4/2021"
+output: html_document
+---
+
+# Importing modules and functions
+
+```{r}
+path_to_data_list <- "./data_list.csv"
+channels <- c("OD600:600")
+# DO NOT EDIT BELOW
+dir_path_to_code <- "./plate_experiments_analysis_toolbox"
+source(sprintf("%s/load_packages_functions.R",dir_path_to_code))
+source(sprintf("%s/modeling_functions.R",dir_path_to_code))
+source(sprintf("%s/read_bulk_format_2.R",dir_path_to_code))
+```
+
+# Analyse data
+
+```{r}
+mydata
+```
+
+# Vizualize the data
+
+```{r}
+mydata$concentration <- factor(mydata$concentration, levels=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+for(w in sort(unique(mydata$concentration))){
+if(w!="blank"){
+    print(mydata %>%
+    filter(concentration==w) %>%
+    ggplot() +
+    geom_line(aes(time_min,od,group=paste(date,plate,well),col=date),alpha=1)+
+    scale_y_continuous(trans="log10")+
+    xlab("time (min)")+
+    ylab("od")+
+    coord_cartesian(ylim=c(0.03,0.4))+
+    theme_cowplot()+
+    labs(subtitle=w))
+}else{}
+}
+
+mydata$concentration <- factor(mydata$concentration, levels=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+for(w in sort(unique(mydata$concentration))){
+if(w!="blank"){
+    print(mydata %>%
+    filter(concentration==w) %>%
+    ggplot() +
+    geom_line(aes(time_min,od,group=paste(date,plate,well),col=date),alpha=1)+
+    scale_y_continuous(trans="log10")+
+    xlab("time (min)")+
+    ylab("od")+
+    #coord_cartesian(ylim=c(0.03,0.4))+
+    theme_cowplot()+
+    labs(subtitle=w))
+}else{}
+}
+
+mydata$concentration <- factor(mydata$concentration, levels=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+for(w in sort(unique(mydata$concentration))){
+if(w=="blank"){
+    print(mydata %>%
+    filter(concentration==w) %>%
+    ggplot() +
+    geom_line(aes(time_min,od,group=paste(date,plate,well),col=date),alpha=1)+
+    #scale_y_continuous(trans="log10")+
+    xlab("time (min)")+
+    ylab("od")+
+    coord_cartesian(ylim=c(0.04,0.06))+
+    facet_wrap(~equipment)+
+    theme_cowplot()+
+    labs(subtitle=w))
+}else{}
+}
+```
+
+# Vizualize the data, stratyfied by acetate 10% origin
+
+```{r}
+mydata$concentration <- factor(mydata$concentration, levels=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+for(w in sort(unique(mydata$concentration))){
+if(w!="blank"){
+    print(mydata %>%
+    filter(concentration==w) %>%
+    ggplot() +
+    geom_line(aes(time_min,od,group=paste(date,plate,well),col=paste(date,origin)),alpha=1)+
+    scale_y_continuous(trans="log10")+
+    xlab("time (min)")+
+    ylab("od")+
+    coord_cartesian(ylim=c(0.03,0.4))+
+    theme_cowplot()+
+    labs(subtitle=w))
+}else{}
+}
+
+mydata$concentration <- factor(mydata$concentration, levels=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+for(w in sort(unique(mydata$concentration))){
+if(w!="blank"){
+    print(mydata %>%
+    filter(concentration==w) %>%
+    ggplot() +
+    geom_line(aes(time_min,od,group=paste(date,plate,well),col=paste(date,origin)),alpha=1)+
+    scale_y_continuous(trans="log10")+
+    xlab("time (min)")+
+    ylab("od")+
+    #coord_cartesian(ylim=c(0.03,0.4))+
+    theme_cowplot()+
+    labs(subtitle=w))
+}else{}
+}
+
+mydata$concentration <- factor(mydata$concentration, levels=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+for(w in sort(unique(mydata$concentration))){
+if(w=="blank"){
+    print(mydata %>%
+    filter(concentration==w) %>%
+    ggplot() +
+    geom_line(aes(time_min,od,group=paste(date,plate,well),col=paste(date,origin)),alpha=1)+
+    #scale_y_continuous(trans="log10")+
+    xlab("time (min)")+
+    ylab("od")+
+    coord_cartesian(ylim=c(0.04,0.06))+
+    facet_wrap(~equipment)+
+    theme_cowplot()+
+    labs(subtitle=w))
+}else{}
+}
+```
+
+
+
+```{r}
+blank_od <- mydata %>% 
+  filter(concentration=="blank") %>% 
+  group_by(date,plate,equipment,well) %>% 
+  mutate(max_od=max(od)) %>% 
+  filter(max_od<0.05) %>% 
+  ungroup() %>% 
+  group_by(date,plate,equipment) %>% 
+  mutate(blank=mean(od,na.rm=TRUE)) %>% 
+  ungroup() %>% 
+  distinct(date,plate,equipment,blank)
+
+blank_od_synergy2 <- blank_od %>% 
+  group_by(equipment) %>% 
+  summarise(mean_blank=mean(blank)) %>% 
+  filter(equipment=="synergy2") %>% 
+  .$mean_blank
+
+blank_od <- blank_od %>% 
+  add_row(date="20220818",plate="pl1",equipment="synergy2",blank=blank_od_synergy2)
+
+```
+
+```{r}
+mydata_with_blank <- mydata %>% 
+  left_join(blank_od,by=c("date","plate","equipment")) %>% 
+  group_by(date,plate,equipment) %>% 
+  mutate(corrected_od=od-blank) %>% 
+  filter(corrected_od>0) %>% 
+  ungroup()
+
+mydata_with_blank$concentration <- factor(mydata_with_blank$concentration, levels=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+for(w in sort(unique(mydata_with_blank$concentration))){
+if(w!="blank"){
+    print(mydata_with_blank %>%
+    filter(concentration==w) %>%
+    ggplot() +
+    geom_line(aes(time_min,corrected_od,group=paste(date,plate,well),col=date),alpha=1)+
+    scale_y_continuous(trans="log10")+
+    xlab("time (min)")+
+    ylab("corrected_od")+
+    coord_cartesian(ylim=c(0.03,0.4))+
+    theme_cowplot()+
+    labs(subtitle=w))
+}else{}
+}
+
+mydata_with_blank$concentration <- factor(mydata_with_blank$concentration, levels=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+for(w in sort(unique(mydata_with_blank$concentration))){
+if(w!="blank"){
+    print(mydata_with_blank %>%
+    filter(concentration==w) %>%
+    ggplot() +
+    geom_line(aes(time_min,corrected_od,group=paste(date,plate,well),col=date),alpha=1)+
+    scale_y_continuous(trans="log10")+
+    xlab("time (min)")+
+    ylab("corrected_od")+
+    #coord_cartesian(ylim=c(0.03,0.4))+
+    theme_cowplot()+
+    labs(subtitle=w))
+}else{}
+}
+
+mydata_with_blank$concentration <- factor(mydata_with_blank$concentration, levels=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+for(w in sort(unique(mydata_with_blank$concentration))){
+if(w=="blank"){
+    print(mydata_with_blank %>%
+    filter(concentration==w) %>%
+    ggplot() +
+    geom_line(aes(time_min,corrected_od,group=paste(date,plate,well),col=date),alpha=1)+
+    #scale_y_continuous(trans="log10")+
+    xlab("time (min)")+
+    ylab("corrected_od")+
+    coord_cartesian(ylim=c(0.04,0.06))+
+    facet_wrap(~equipment)+
+    theme_cowplot()+
+    labs(subtitle=w))
+}else{}
+}
+
+
+```
+
+
+# Determine growth-rates per well
+
+## Plot OD versus time
+
+### All experiments
+
+```{r}
+od_range_df<-tibble(max_od=c(NA,NA,0.012,0.018,0.03,0.042,0.048,0.06,0.13,0.14,0.14,0.04),min_od=c(NA,NA,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004),concentration=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+
+mydata_with_blank$concentration <- factor(mydata_with_blank$concentration, levels=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+for(w in sort(unique(mydata_with_blank$concentration))){
+if(w!="blank"){
+    print(mydata_with_blank %>%
+          left_join(od_range_df,by=c("concentration")) %>% 
+          filter(concentration==w) %>%
+          group_by(date,plate,well,equipment) %>% 
+          filter(first(corrected_od)<0.003) %>% 
+          ungroup() %>% 
+          ggplot() +
+          geom_line(aes(time_min,corrected_od,group=paste(date,plate,well),col=paste(date,origin)),alpha=1)+
+          geom_hline(aes(yintercept=max_od))+
+          geom_hline(aes(yintercept=min_od))+
+          scale_y_continuous(trans="log10")+
+          xlab("time (min)")+
+          ylab("corrected_od")+
+          #coord_cartesian(ylim=c(0.03,0.4))+
+          theme_cowplot()+
+          labs(subtitle=w))
+}else{}
+}
+
+```
+
+### 29/30 of August
+
+```{r}
+od_range_df<-tibble(max_od=c(NA,NA,0.012,0.018,0.03,0.042,0.048,0.06,0.13,0.14,0.14,0.04),min_od=c(NA,NA,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004),concentration=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+
+
+mydata_with_blank_august <- mydata_with_blank %>% 
+  filter(date %in% c("20220829","20220830"))
+
+mydata_with_blank_august$concentration <- factor(mydata_with_blank_august$concentration, levels=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+for(w in sort(unique(mydata_with_blank_august$concentration))){
+if(w!="blank"){
+    print(mydata_with_blank_august %>%
+          left_join(od_range_df,by=c("concentration")) %>% 
+          filter(concentration==w) %>%
+          group_by(date,plate,well,equipment) %>% 
+          filter(first(corrected_od)<0.003) %>% 
+          ungroup() %>% 
+          ggplot() +
+          geom_line(aes(time_min,corrected_od,group=paste(date,plate,well),col=paste(date,origin)),alpha=1)+
+          geom_hline(aes(yintercept=max_od))+
+          geom_hline(aes(yintercept=min_od))+
+          scale_y_continuous(trans="log10")+
+          xlab("time (min)")+
+          ylab("corrected_od")+
+          #coord_cartesian(ylim=c(0.03,0.4))+
+          theme_cowplot()+
+          labs(subtitle=w))
+}else{}
+}
+
+```
+### September
+
+```{r}
+od_range_df<-tibble(max_od=c(NA,NA,0.002,0.004,0.005,0.01,0.012,0.02,0.04,0.05,0.14,0.04),min_od=c(NA,NA,0.0008,0.002,0.002,0.002,0.002,0.003,0.003,0.004,0.004,0.004),time_cutoff=c(NA,NA,2200,3000,3000,3000,2400,2000,1800,2000,2800,Inf),concentration=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+
+
+mydata_with_blank_september <- mydata_with_blank %>% 
+  filter(date %in% c("20220908"))
+
+mydata_with_blank_september$concentration <- factor(mydata_with_blank_september$concentration, levels=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"))
+for(w in sort(unique(mydata_with_blank_september$concentration))){
+if(w!="blank"){
+    print(mydata_with_blank_september %>%
+          left_join(od_range_df,by=c("concentration")) %>% 
+          filter(concentration==w) %>%
+          filter(time_min<time_cutoff) %>% 
+          group_by(date,plate,well,equipment) %>% 
+          filter(first(corrected_od)<0.003) %>% 
+          ungroup() %>% 
+          ggplot() +
+          geom_line(aes(time_min,corrected_od,group=paste(date,plate,well),col=paste(date,origin)),alpha=1)+
+          geom_hline(aes(yintercept=max_od))+
+          geom_hline(aes(yintercept=min_od))+
+          scale_y_continuous(trans="log10")+
+          xlab("time (min)")+
+          ylab("corrected_od")+
+          #coord_cartesian(ylim=c(0.03,0.4))+
+          theme_cowplot()+
+          labs(subtitle=w))
+}else{}
+}
+
+```
+
+Linear regression
+
+```{r}
+od_range_df_august<-tibble(max_od=rep(c(NA,NA,0.012,0.018,0.03,0.042,0.048,0.06,0.13,0.14,0.14,0.04),times=2),min_od=rep(c(NA,NA,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004,0.004),times=2),concentration=rep(c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"),times=2),time_cutoff=rep(c(Inf),times=24),date=rep(c("20220829","20220830"),each=12))
+od_range_df_september<-tibble(max_od=c(NA,NA,0.002,0.004,0.005,0.01,0.012,0.02,0.04,0.05,0.14,0.04),min_od=c(NA,NA,0.0008,0.002,0.002,0.002,0.002,0.003,0.003,0.004,0.004,0.004),time_cutoff=c(NA,NA,2200,3000,3000,3000,2400,2000,1800,2000,2800,Inf),concentration=c("blank","0","0.006","0.012","0.025","0.05","0.1","0.2","0.5","1","2","4"),date=rep(c("20220908"),times=12))
+
+results <- rbind(
+  mydata_with_blank_august %>%
+  left_join(od_range_df_august,by=c("concentration","date")),
+  
+  mydata_with_blank_september %>%
+  left_join(od_range_df_september,by=c("concentration","date"))) %>% 
+  
+  group_by(date,plate,well,equipment) %>% 
+  filter(first(corrected_od)<0.003) %>%
+  filter(time_min<time_cutoff) %>% 
+  ungroup() %>% 
+  
+  filter(corrected_od>min_od) %>% 
+  filter(corrected_od<max_od) %>% 
+  group_by(date,plate,equipment,concentration,well,origin) %>% 
+  mutate(exp_gr=linear_mod_slope(log(corrected_od),time_min),
+         gr=exp_gr/log(2),
+         doubling_time=1/gr) %>% 
+  ungroup() %>% 
+  group_by(date,plate,equipment,concentration,origin) %>% 
+  mutate(mean_gr=mean(gr,na.rm=TRUE),
+         sd_gr=sd(gr,na.rm=TRUE),
+         mean_doubling_time=mean(doubling_time,na.rm=TRUE)/60,
+         sd_doubling_time=sd(doubling_time,na.rm=TRUE)/60) %>% 
+  ungroup() %>% 
+  distinct(date,plate,equipment,concentration,origin,.keep_all=TRUE)
+```
+
+```{r}
+results %>% 
+  ggplot()+
+  geom_point(aes(as.double(concentration),mean_doubling_time,col=paste(date,origin)))+
+  geom_vline(aes(xintercept=0.2),col="red",linetype="dashed")+
+  geom_hline(aes(yintercept=3.5),col="red",linetype="dashed")+
+  geom_errorbar(aes(x=as.double(concentration),ymin=mean_doubling_time-sd_doubling_time,ymax=mean_doubling_time+sd_doubling_time,col=paste(date,origin)))+
+  theme_cowplot()+
+  coord_cartesian(ylim=c(0,16))+
+  scale_x_continuous(trans="log10")+
+  ylab("<Doubling time>")+
+  xlab("Acetate concentration")
+```
+
+
+
+
+
+

@@ -1,0 +1,6 @@
+date,description,plate,data_path,plate_map_path
+20220818,acetate,pl1,./data/20220818_ace_0.2/220818_20220816_acetate0.2.txt,./data/20220818_ace_0.2/20220816_pl1_map.csv
+20220830,acetate,pl1,./data/20220829_ace_high_concentration/Plate 1_220829_074248.txt,./data/20220829_ace_high_concentration/20220829_ace_high_pl1_map.csv
+20220829,acetate,pl1,./data/20220829_ace_low_concentration/220829_20220823_acetate_konz.txt,./data/20220829_ace_low_concentration/20220829_low_pl1_map.csv
+20220907,acetate,pl1,./data/20220907_acetate_synergy_hi1/20220907_acetate_synergy_hi1.txt,./data/20220907_acetate_synergy_hi1/20220907_map.csv
+20220908,acetate,pl1,./data/20220908_acetate_synergy_2/20220908_acetate_synergy_2.txt,./data/20220908_acetate_synergy_2/20220908_map.csv
